@@ -1,6 +1,6 @@
 /* Service worker: deja el juego disponible sin conexión.
    Si cambiás algún archivo, subí el número de VERSION para que se actualice. */
-const VERSION='chirimbolandia-v2';
+const VERSION='chirimbolandia-v3';
 const CORE=['./','./index.html','./cubolandia.html','./manifest.webmanifest','./icon-192.png','./icon-512.png'];
 self.addEventListener('install',e=>{
   e.waitUntil(caches.open(VERSION).then(c=>c.addAll(CORE)).then(()=>self.skipWaiting()));

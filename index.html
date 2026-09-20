@@ -761,6 +761,16 @@ function screenCredits(){
 }
 
 /* ================= pantallas ================= */
+function exportSave(){return 'CHIRI1:'+btoa(unescape(encodeURIComponent(JSON.stringify(S))));}
+function importSave(txt){
+  try{
+    txt=String(txt).replace(/\s+/g,'');
+    if(txt.indexOf('CHIRI1:')!==0)return false;
+    const o=JSON.parse(decodeURIComponent(escape(atob(txt.slice(7)))));
+    if(!o||typeof o!=='object'||!o.nights||!o.facts)return false;
+    const d=DEF();S=Object.assign(d,o,{settings:Object.assign(d.settings,o.settings||{})});save();return true;
+  }catch(e){return false;}
+}
 function screenTitle(){
   const el=h('div',{class:'title'},
     h('div',{class:'moon'},'🌙'),h('h1',{class:'logo'},'CHIRIMBOLANDIA'),
@@ -834,6 +844,20 @@ function screenParents(){
   const weak=Object.entries(S.facts).filter(([k,f])=>f.bad>0).sort((a,b)=>(b[1].bad-b[1].ok*.5)-(a[1].bad-a[1].ok*.5)).slice(0,8);
   const seg=(key,opts)=>h('div',{class:'seg'},opts.map(([v,l])=>h('button',{class:'btn small '+(S.settings[key]===v?'green':'ghost'),onclick:e=>{S.settings[key]=v;save();[...e.currentTarget.parentNode.children].forEach((b,i)=>{b.className='btn small '+(opts[i][0]===v?'green':'ghost');});}},l)));
   const tog=(label,key)=>h('div',{class:'hatrow'},h('span',{},label),h('button',{class:'btn small '+(S.settings[key]?'green':'ghost'),onclick:e=>{S.settings[key]=!S.settings[key];save();e.currentTarget.className='btn small '+(S.settings[key]?'green':'ghost');e.currentTarget.textContent=S.settings[key]?'Sí':'No';}},S.settings[key]?'Sí':'No'));
+  const out=h('textarea',{readonly:true,rows:'4',hidden:true,style:'width:100%;margin-top:8px;padding:8px;border-radius:8px;border:3px solid #000;background:var(--panel2);color:var(--ink);font-size:.8rem;word-break:break-all;-webkit-user-select:text;user-select:text'});
+  const inp=h('textarea',{rows:'4',placeholder:'Pegá acá el código de la otra partida',style:'width:100%;margin-top:8px;padding:8px;border-radius:8px;border:3px solid #000;background:var(--panel2);color:var(--ink);font-size:.8rem;-webkit-user-select:text;user-select:text'});
+  let loadArmed=false;
+  const transfer=h('div',{},h('h2',{class:'sec px'},'Pasar la partida a otro celu'),
+    h('p',{style:'font-size:.9rem;color:var(--soft);margin-bottom:8px;line-height:1.4'},'1) En este celu tocá "Guardar" y copiá el código. 2) Mandalo por WhatsApp. 3) En el otro celu pegalo abajo y tocá "Cargar".'),
+    h('button',{class:'btn small blue',onclick:async()=>{
+      const code=exportSave();out.value=code;out.hidden=false;out.select();
+      try{await navigator.clipboard.writeText(code);toast('📋 Código copiado. ¡Pegalo en WhatsApp!');}catch(e){toast('Copiá el código de la caja');}
+    }},'📤 Guardar partida'),out,
+    inp,h('button',{class:'btn small green',style:'margin-top:8px',onclick:e=>{
+      if(!inp.value.trim()){toast('Pegá primero el código');return;}
+      if(!loadArmed){loadArmed=true;e.currentTarget.textContent='¿Seguro? Reemplaza la partida de este celu. Tocá de nuevo';setTimeout(()=>{loadArmed=false;e.currentTarget.textContent='📥 Cargar partida';},4000);return;}
+      if(importSave(inp.value)){toast('✅ ¡Partida cargada!');screenNights();}else{loadArmed=false;e.currentTarget.textContent='📥 Cargar partida';toast('❌ El código no es válido. Copialo completo.');}
+    }},'📥 Cargar partida'));
   let armed=false;
   const reset=h('button',{class:'btn small red',style:'margin-top:14px',onclick:e=>{
     if(!armed){armed=true;e.currentTarget.textContent='¿Seguro? Tocá de nuevo';setTimeout(()=>{armed=false;reset.textContent='Borrar todo el progreso';},3500);}
@@ -845,7 +869,7 @@ function screenParents(){
       h('div',{class:'hatrow'},h('span',{},'Dificultad (tiempo para reaccionar)'),seg('diff',[['easy','Más tiempo'],['normal','Normal'],['hard','Difícil']])),
       h('div',{class:'hatrow'},h('span',{},'Sustos'),seg('scare',[['soft','Suaves'],['normal','Normales']])),
       tog('Sonido','sound'),tog('Leer en voz alta los textos','read'),tog('Siempre mostrar opciones (sin teclado)','forceOpts'),
-      h('p',{style:'font-size:.9rem;color:var(--soft);margin-top:12px;line-height:1.4'},'Si pierde varias veces una noche, el juego le da automáticamente un poco más de tiempo. Sesiones de 10 a 15 minutos, mejor todos los días. Las cuentas que más le cuestan aparecen más seguido.'),reset)));
+      transfer,h('p',{style:'font-size:.9rem;color:var(--soft);margin-top:12px;line-height:1.4'},'Si pierde varias veces una noche, el juego le da automáticamente un poco más de tiempo. Sesiones de 10 a 15 minutos, mejor todos los días. Las cuentas que más le cuestan aparecen más seguido.'),reset)));
 }
 const MODES=[
   {n:'Tabla del 2',e:'🪆',gen:()=>qFor([2],.12,2)},{n:'Tabla del 3',e:'🧸',gen:()=>qFor([3],.12,3)},{n:'Tabla del 4',e:'🤡',gen:()=>qFor([4],.12,4)},
